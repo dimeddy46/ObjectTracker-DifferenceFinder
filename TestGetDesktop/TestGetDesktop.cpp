@@ -1,5 +1,5 @@
 #include "pch.h"
-
+#include <opencv2/video/tracking.hpp>
 using namespace cv;
 using namespace std;
 using namespace std::chrono;
@@ -8,7 +8,7 @@ mutex mu;
 Mat templ = Mat::zeros(5, 5, CV_8UC1);
 int xS, yS, frame, match_method = 3;
 char win[] = "output";
-float scale = 1.7f;
+float scale = 1.7f, thresh = 0.999f;
 
 time_point<system_clock> refz;
 vector<Point> pt;
@@ -116,13 +116,13 @@ void MatchingMethod()
 			//	normalize(result, result, 0, 1, NORM_MINMAX, -1, Mat());
 
 			vector<Point> max_values;
-
+			
 			for (y = 0; y < result.rows; y++)
 				for (x = 0; x < result.cols; x++) 
 				{
-					if (result.at<float>(y, x) >= 0.98)
+					if (result.at<float>(y, x) >= thresh)
 						max_values.push_back(Point(x, y));
-					if (max_values.size() > 100)
+					if (max_values.size() > 150)
 					{
 						templ = Mat::zeros(Size(5, 5), CV_8UC1);						
 						y = result.rows - 1;
