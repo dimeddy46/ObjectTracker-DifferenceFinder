@@ -5,11 +5,11 @@ In order to choose a image for tracking, a rectangle can be drawn by clicking 2 
 Done using matchTemplate function from OpenCV library and multiple threads.<br>
 Modify "thresh" for better results and "scale" for better FPS<br><br>
 <b>Results with thresh 0.999f</b><br>
-<img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/1.png width="100%" height="100%">
-<img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/2.png width="800" height="500">
-<img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/3.png width="800" height="500">
-<img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/4.png width="800" height="500">
-<img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/5.png width="800" height="500">
-<img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/6.png width="800" height="500">
-<img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/7.png width="800" height="500">
-<img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/8.png width="800" height="500">
+<img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/1.jpg width="100%" height="100%">
+<img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/2.jpg width="100%" height="100%">
+<img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/3.jpg width="100%" height="100%">
+<img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/4.jpg width="100%" height="100%">
+<img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/5.jpg width="100%" height="100%">
+<img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/6.jpg width="100%" height="100%">
+<img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/7.jpg width="100%" height="100%">
+<img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/8.jpg width="100%" height="100%">
