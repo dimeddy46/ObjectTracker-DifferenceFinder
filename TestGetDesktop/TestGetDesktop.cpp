@@ -1,18 +1,23 @@
 #include "pch.h"
-#include <opencv2/video/tracking.hpp>
+
 using namespace cv;
 using namespace std;
 using namespace std::chrono;
 
 mutex mu;
-Mat templ = Mat::zeros(5, 5, CV_8UC1);
-int xS, yS, frame, match_method = 3;
+Mat templ = Mat::zeros(1, 1, CV_8UC1);
+int xS, yS, frame, f2, match_method = 3;		
 char win[] = "output";
-float scale = 1.7f, thresh = 0.999f;
+float scale = 1.0f, thresh = 0.995f;
 
-time_point<system_clock> refz;
 vector<Point> pt;
-bool enough = false;
+bool stop = false;
+time_point<system_clock> refz;
+
+struct MaxVals {
+	Point point;
+	float val;
+};
 
 Mat hwnd2mat(HWND hwnd)
 {
@@ -69,110 +74,127 @@ Mat hwnd2mat(HWND hwnd)
 
 void mouse_callback(int  event, int  x, int  y, int  flag, void *param)
 {
-	if (event == EVENT_LBUTTONDOWN && !enough)
-	{
+	if (event == EVENT_LBUTTONDOWN)	
 		pt.push_back(Point(x, y));
-		cout << x << " " << y;
-		if (pt.size() == 2)
-			enough = true;
-	}
-
+	
 }
 
-void drawSelection(Mat img)
+void newTemplate(Mat img)
 {
-	if (enough)
+	if (pt.size() == 2)
 	{
 		templ.release();
-		cvtColor(img, img, CV_BGR2GRAY);
 		templ = img(Rect(pt[0], pt[1]));
 		pt.clear();
-		enough = false;
 	}
 }
 
-void TimePrint()
+void FPSPrint(Mat imgBGR)
 {
-	if (duration_cast<milliseconds>(system_clock::now() - refz).count() >= 1000)
-	{
-		cout << "FPS: " << frame << endl;
+	if (duration_cast<milliseconds>(system_clock::now() - refz).count() >= 1000){	
+		f2 = frame;
 		frame = 0;
 		refz = system_clock::now();
 	}
+	putText(imgBGR, "FPS:" + to_string(f2) + " Thresh:" + to_string(thresh).substr(0, 5), Point(5, 20), 
+		FONT_HERSHEY_DUPLEX, 0.7, Scalar(0, 0, 0), 3, 11);
+	putText(imgBGR, "FPS:" + to_string(f2) + " Thresh:" + to_string(thresh).substr(0, 5), Point(5, 20), 
+		FONT_HERSHEY_DUPLEX, 0.7, Scalar(255, 255, 255), 2, 11);
+}
+
+bool compareMethod(MaxVals x, MaxVals y) {
+	return (x.val < y.val);
 }
 
 void MatchingMethod()
 {
-	int y, x;
-	Mat img, img2;
+	int y, x, pos = 0;
+	Mat grey, imgBGR;
+	string outFloat;
 	Mat result = Mat(0, 0, CV_32FC1);
 	HWND hwndDesktop = GetDesktopWindow();
+	MaxVals crt;
+	vector<MaxVals> max;	
 
-	while (true) {
+	while (!stop) {
 		try {
-			img2 = hwnd2mat(hwndDesktop);
-			cvtColor(img2, img, CV_BGR2GRAY);			
-			matchTemplate(img, templ, result, match_method);
-			//	normalize(result, result, 0, 1, NORM_MINMAX, -1, Mat());
-
-			vector<Point> max_values;
-			
+			imgBGR = hwnd2mat(hwndDesktop);
+			cvtColor(imgBGR, grey, CV_BGR2GRAY);
+			matchTemplate(grey, templ, result, match_method);
+						
 			for (y = 0; y < result.rows; y++)
 				for (x = 0; x < result.cols; x++) 
 				{
-					if (result.at<float>(y, x) >= thresh)
-						max_values.push_back(Point(x, y));
-					if (max_values.size() > 150)
+					if ((crt.val = result.at<float>(y, x)) >= thresh)
 					{
-						templ = Mat::zeros(Size(5, 5), CV_8UC1);						
-						y = result.rows - 1;
-						x = result.cols - 1;
-						max_values.clear();
-						cout << "---------------LIMIT EXCEEDED => CLEARED SCREEN------------" << endl;
-					}
-
+						crt.point = Point(x, y);
+						max.push_back(crt);
+					}	
 				}
-			drawSelection(img2);
-			for (Point matchLoc : max_values) {
-				rectangle(img2, matchLoc, Point(matchLoc.x + templ.cols, matchLoc.y + templ.rows), Scalar(0,0,255), 2, 6, 0);
-				//cout << matchLoc << endl;
-			}
-			mu.lock();
-			imshow(win, img2);
-			frame++;
-			waitKey(1);
-			img.release();
-			result.release();
-			mu.unlock();
+			sort(max.begin(), max.end(), compareMethod);
+			if(max.size() > 30)
+				max.erase(max.begin(),max.end()-15);
+			for(pos = 0;pos<max.size();pos++)
+				cout << max[pos].val << " " << max[pos].point << endl;
+			if(pos != 0)
+				cout << endl;
+		
+			newTemplate(grey);
+			FPSPrint(imgBGR);
+			for (MaxVals matchLoc : max)
+			{	
+				outFloat = to_string(matchLoc.val).substr(0, 6);
+				rectangle(imgBGR, matchLoc.point, Point(matchLoc.point.x + templ.cols, matchLoc.point.y + templ.rows), Scalar(0,0,255), 2, 6);
+				putText(imgBGR, outFloat, matchLoc.point, FONT_HERSHEY_DUPLEX, 0.65, Scalar(0, 0, 0), 3, 7);
+				putText(imgBGR, outFloat, matchLoc.point, FONT_HERSHEY_DUPLEX, 0.65, Scalar(255, 0, 255), 2, 7);				
+			}	
 
+			mu.lock();
+			imshow(win, imgBGR);
+			frame++;
+			mu.unlock();	
+
+			grey.release();
+			imgBGR.release();
+			result.release();
+			max.clear();
+					
 		}
-		catch (...) {}
+		catch (...) { cout << "EXCEPTION!!!!!!!!!!!"; }
 	}
 	return;
 }
 
+void changeThresh() {
+	while (!stop) 
+	{
+		if (GetAsyncKeyState(0x57) & 1)		// ----------- W key pressed
+			thresh += 0.001; 		
+		else if (GetAsyncKeyState(0x53) & 1)  // ----------- S key pressed
+			thresh -= 0.001; 				
+	}
+}
 void MatchStart() {
-
 	xS = (int)(GetSystemMetrics(SM_CXSCREEN) / scale);
 	yS = (int)(GetSystemMetrics(SM_CYSCREEN) / scale);
 
-	vector<future<void>> tasks;
-	int key = 0, i;
+	vector<future<void>> tasks;	
 	refz = system_clock::now();
 
-	while (key != 27)
+	while (!(GetAsyncKeyState(VK_ESCAPE) & 1))
 	{
 		if (tasks.empty())
 		{
-			for (i = 0; i < 3; i++) {
+			for (int i = 0; i < 4; i++) {
 				tasks.push_back(async(launch::async, MatchingMethod));
-				Sleep(50);
+				Sleep(50);				
 			}
+			tasks.push_back(async(launch::async, changeThresh));
 		}
-		key = waitKey(1);
-		TimePrint();
+		waitKey(1);
 	}
-	exit(0);
+	stop = true;
+	
 }
 
 int main()
@@ -180,6 +202,8 @@ int main()
 	namedWindow(win, WINDOW_AUTOSIZE);
 	setMouseCallback("output", mouse_callback);
 	MatchStart();
+	destroyAllWindows();
+	system("pause");
 	return 0;
 }
 
