@@ -106,7 +106,7 @@ void FPSPrint(Mat imgBGR)
 
 bool distEuclid(MaxVals a, MaxVals b)	// simplified euclidean distance
 {		
-	if ((abs(a.point.x - b.point.x) + abs(a.point.y - b.point.y)) < 20)
+	if ((abs(a.point.x - b.point.x) + abs(a.point.y - b.point.y)) < 15)
 		return true;
 	return false;
 }
@@ -130,7 +130,7 @@ void MatchingMethod()
 			for (y = 0; y < result.rows; y++)
 				for (x = 0; x < result.cols; x++)
 				{
-					if (result.at<float>(y, x) >= thresh)
+					if (result.at<float>(y, x) >= thresh)	// add all brightest points to struct
 					{
 						crt.val = result.at<float>(y, x);
 						crt.point = Point(x, y);
@@ -157,21 +157,20 @@ void MatchingMethod()
 			if (x != 0)
 				cout << "------------------------------ " << max.size() << endl;
 		*/
-			
 			newTemplate(grey);
 			FPSPrint(imgBGR);
 			for (MaxVals matchLoc : max)
 			{	
 				outFloat = to_string(matchLoc.val).substr(0, 6);
 				rectangle(imgBGR, matchLoc.point, Point(matchLoc.point.x + templ.cols, matchLoc.point.y + templ.rows), Scalar(0,0,255), 2, 6);
-				putText(imgBGR, outFloat, matchLoc.point, FONT_HERSHEY_DUPLEX, 0.65, Scalar(0, 0, 0), 3, 7);
-				putText(imgBGR, outFloat, matchLoc.point, FONT_HERSHEY_DUPLEX, 0.65, Scalar(255, 0, 255), 2, 7);				
+				putText(imgBGR, outFloat, matchLoc.point, FONT_HERSHEY_DUPLEX, 0.65/scale, Scalar(0, 0, 0), 3, 5);
+				putText(imgBGR, outFloat, matchLoc.point, FONT_HERSHEY_DUPLEX, 0.65/scale, Scalar(255, 0, 255), 2, 5);				
 			}	
 
-			mu.lock();
+		//	mu.lock();
 			imshow(win, imgBGR);
 			frame[0]++;
-			mu.unlock();	
+		//	mu.unlock();	
 
 			grey.release();
 			imgBGR.release();
@@ -188,9 +187,9 @@ void changeThresh()
 	while (!stop) 
 	{
 		if (GetAsyncKeyState(0x57) & 1)		  // ----------- W key pressed
-			thresh += 0.0001f; 		
+			thresh += 0.0001f;
 		else if (GetAsyncKeyState(0x53) & 1)  // ----------- S key pressed
-			thresh -= 0.0001f; 				
+			thresh -= 0.0001f;
 	}
 }
 void MatchStart() 
