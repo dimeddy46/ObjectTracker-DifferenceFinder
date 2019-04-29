@@ -5,6 +5,8 @@ In order to choose a image for tracking, a rectangle can be drawn by clicking 2 
 Done using matchTemplate function from OpenCV library and multiple threads.<br>
 Modify "thresh", "scale", "threads" for better performance and results.<br>
 Tested here: https://quizdiva.net/culture/spot-the-different-food/ <br><br>
+<b>Download:</b><br>
+https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/releases <br>
 <b>To build:</b><br>
 Any version of OpenCV is required and can be installed from here: https://opencv.org/releases.html <br>
 Inside CMakeLists.txt, please specify the path to your OpenCV/build directory as OpenCV_DIR_HOME variable.
