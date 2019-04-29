@@ -3,7 +3,8 @@
 Opens a "output" window which continuously prints the user's desktop.<br>
 In order to choose a image for tracking, a rectangle can be drawn by clicking 2 points on the output.<br><br>
 Done using matchTemplate function from OpenCV library and multiple threads.<br>
-Modify "thresh", "scale", "threads" for better performance and results.<br>
+Modify "scale", "threads" for better performance and results. <br>
+Threshold can be modified by pressing W and S keys.<br><br>
 Tested here: https://quizdiva.net/culture/spot-the-different-food/ <br><br>
 <b>Download:</b><br>
 https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/releases <br>
