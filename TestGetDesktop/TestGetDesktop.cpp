@@ -4,14 +4,16 @@ using namespace cv;
 using namespace std;
 using namespace std::chrono;
 
+int match_method = 3, threads = 4;				
+float scale = 1.0f, thresh = 0.997f;
+
+int imgSize[2], frame[2];		//imgSize[0] = width(x) , imgSize[0] = height(y) | frame[1] for output, frame[0] for calculation
+char win[] = "output";
+bool stop = false;
+
 mutex mu;
 Mat templ = Mat::zeros(1, 1, CV_8UC1);
-int xS, yS, frame, f2, match_method = 3;		
-char win[] = "output";
-float scale = 1.0f, thresh = 0.995f;
-
 vector<Point> pt;
-bool stop = false;
 time_point<system_clock> refz;
 
 struct MaxVals {
@@ -67,7 +69,7 @@ Mat hwnd2mat(HWND hwnd)
 	DeleteDC(hwindowCompatibleDC);
 	ReleaseDC(hwnd, hwindowDC);
 	
-	resize(src, src, Size(xS, yS));
+	resize(src, src, Size(imgSize[0], imgSize[1]));
 	cvtColor(src, src, CV_BGRA2BGR);
 	return src;
 }
@@ -75,8 +77,7 @@ Mat hwnd2mat(HWND hwnd)
 void mouse_callback(int  event, int  x, int  y, int  flag, void *param)
 {
 	if (event == EVENT_LBUTTONDOWN)	
-		pt.push_back(Point(x, y));
-	
+		pt.push_back(Point(x, y));	
 }
 
 void newTemplate(Mat img)
@@ -91,54 +92,72 @@ void newTemplate(Mat img)
 
 void FPSPrint(Mat imgBGR)
 {
-	if (duration_cast<milliseconds>(system_clock::now() - refz).count() >= 1000){	
-		f2 = frame;
-		frame = 0;
+	if (duration_cast<milliseconds>(system_clock::now() - refz).count() >= 1000)
+	{	
+		frame[1] = frame[0];
+		frame[0] = 0;
 		refz = system_clock::now();
 	}
-	putText(imgBGR, "FPS:" + to_string(f2) + " Thresh:" + to_string(thresh).substr(0, 5), Point(5, 20), 
+	putText(imgBGR, "FPS:" + to_string(frame[1]) + " Thresh:" + to_string(thresh).substr(0, 6), Point(5, 20), 
 		FONT_HERSHEY_DUPLEX, 0.7, Scalar(0, 0, 0), 3, 11);
-	putText(imgBGR, "FPS:" + to_string(f2) + " Thresh:" + to_string(thresh).substr(0, 5), Point(5, 20), 
+	putText(imgBGR, "FPS:" + to_string(frame[1]) + " Thresh:" + to_string(thresh).substr(0, 6), Point(5, 20), 
 		FONT_HERSHEY_DUPLEX, 0.7, Scalar(255, 255, 255), 2, 11);
 }
 
-bool compareMethod(MaxVals x, MaxVals y) {
-	return (x.val < y.val);
+bool distEuclid(MaxVals a, MaxVals b)	// simplified euclidean distance
+{		
+	if ((abs(a.point.x - b.point.x) + abs(a.point.y - b.point.y)) < 20)
+		return true;
+	return false;
 }
 
 void MatchingMethod()
 {
-	int y, x, pos = 0;
-	Mat grey, imgBGR;
+	int y, x;
+	Mat grey, imgBGR, result = Mat(0, 0, CV_32FC1);
 	string outFloat;
-	Mat result = Mat(0, 0, CV_32FC1);
-	HWND hwndDesktop = GetDesktopWindow();
 	MaxVals crt;
 	vector<MaxVals> max;	
+	HWND hwndDesktop = GetDesktopWindow();
 
-	while (!stop) {
+	while (!stop) 
+	{
 		try {
 			imgBGR = hwnd2mat(hwndDesktop);
 			cvtColor(imgBGR, grey, CV_BGR2GRAY);
 			matchTemplate(grey, templ, result, match_method);
 						
 			for (y = 0; y < result.rows; y++)
-				for (x = 0; x < result.cols; x++) 
+				for (x = 0; x < result.cols; x++)
 				{
-					if ((crt.val = result.at<float>(y, x)) >= thresh)
+					if (result.at<float>(y, x) >= thresh)
 					{
+						crt.val = result.at<float>(y, x);
 						crt.point = Point(x, y);
 						max.push_back(crt);
-					}	
+					}
+					if (max.size() > 1000) {
+						//cout << "-----------LIMIT EXCEEDED --------------" << endl;
+						y = result.rows - 1;
+						x = result.cols - 1;
+					}
 				}
-			sort(max.begin(), max.end(), compareMethod);
-			if(max.size() > 30)
-				max.erase(max.begin(),max.end()-15);
-			for(pos = 0;pos<max.size();pos++)
-				cout << max[pos].val << " " << max[pos].point << endl;
-			if(pos != 0)
-				cout << endl;
-		
+
+			for (x = 0; x < max.size(); x++)				// get the brightest point from each cluster
+				for (y = x + 1; y < max.size(); y++) 
+					if (distEuclid(max[x], max[y]))
+					{
+						if(max[x].val < max[y].val)
+							swap(max[x], max[y]);
+						max.erase(max.begin() + y);
+						y--;
+					}
+		/*	for(x = 0; x < max.size(); x++)
+				cout << max[x].val << " " << max[x].point << endl;
+			if (x != 0)
+				cout << "------------------------------ " << max.size() << endl;
+		*/
+			
 			newTemplate(grey);
 			FPSPrint(imgBGR);
 			for (MaxVals matchLoc : max)
@@ -151,41 +170,42 @@ void MatchingMethod()
 
 			mu.lock();
 			imshow(win, imgBGR);
-			frame++;
+			frame[0]++;
 			mu.unlock();	
 
 			grey.release();
 			imgBGR.release();
 			result.release();
 			max.clear();
-					
 		}
 		catch (...) { cout << "EXCEPTION!!!!!!!!!!!"; }
 	}
 	return;
 }
 
-void changeThresh() {
+void changeThresh() 
+{
 	while (!stop) 
 	{
-		if (GetAsyncKeyState(0x57) & 1)		// ----------- W key pressed
-			thresh += 0.001; 		
+		if (GetAsyncKeyState(0x57) & 1)		  // ----------- W key pressed
+			thresh += 0.0001f; 		
 		else if (GetAsyncKeyState(0x53) & 1)  // ----------- S key pressed
-			thresh -= 0.001; 				
+			thresh -= 0.0001f; 				
 	}
 }
-void MatchStart() {
-	xS = (int)(GetSystemMetrics(SM_CXSCREEN) / scale);
-	yS = (int)(GetSystemMetrics(SM_CYSCREEN) / scale);
-
-	vector<future<void>> tasks;	
+void MatchStart() 
+{
+	vector<future<void>> tasks;
 	refz = system_clock::now();
+
+	imgSize[0] = (int)(GetSystemMetrics(SM_CXSCREEN) / scale);
+	imgSize[1] = (int)(GetSystemMetrics(SM_CYSCREEN) / scale);
 
 	while (!(GetAsyncKeyState(VK_ESCAPE) & 1))
 	{
 		if (tasks.empty())
 		{
-			for (int i = 0; i < 4; i++) {
+			for (int i = 0; i < threads; i++) {
 				tasks.push_back(async(launch::async, MatchingMethod));
 				Sleep(50);				
 			}
@@ -194,7 +214,7 @@ void MatchStart() {
 		waitKey(1);
 	}
 	stop = true;
-	
+	tasks.clear();
 }
 
 int main()
@@ -203,7 +223,6 @@ int main()
 	setMouseCallback("output", mouse_callback);
 	MatchStart();
 	destroyAllWindows();
-	system("pause");
 	return 0;
 }
 
