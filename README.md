@@ -9,7 +9,7 @@ Modify "thresh" for better results and "scale" for better FPS<br><br>
 <img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/2.jpg width="100%" height="100%">
 <img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/3.jpg width="100%" height="100%">
 <img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/4.jpg width="100%" height="100%">
-<br><br><b>v1</b>
+<br><br><b>v1</b><br><br>
 <img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/5.jpg width="100%" height="100%">
 <img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/6.jpg width="100%" height="100%">
 <img src=https://github.com/dimeddy46/SimpleObjectTrackingOpenCV/blob/master/images/7.jpg width="100%" height="100%">
