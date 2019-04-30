@@ -7,12 +7,12 @@ using namespace std::chrono;
 int match_method = 3, threads = 4;				
 float scale = 1.0f, thresh = 0.997f;
 
-int imgSize[2], frame[2];		//imgSize[0] = width(x) , imgSize[0] = height(y) | frame[1] for output, frame[0] for calculation
+int imgSize[2], frame[2];	//imgSize[0] = width(x) , imgSize[1] = height(y) |  frame[0] for calculation, frame[1] for output
 char win[] = "output";
 bool stop = false;
 
 mutex mu;
-Mat templ = Mat::zeros(1, 1, CV_8UC1);
+Mat templ = Mat(10, 10, CV_8UC1);
 vector<Point> pt;
 time_point<system_clock> refz;
 
@@ -136,8 +136,8 @@ void MatchingMethod()
 						crt.point = Point(x, y);
 						max.push_back(crt);
 					}
-					if (max.size() > 1000) {
-						//cout << "-----------LIMIT EXCEEDED --------------" << endl;
+					if (max.size() > 500) {
+			 			//cout << "-----------LIMIT EXCEEDED --------------" << endl;
 						y = result.rows - 1;
 						x = result.cols - 1;
 					}
@@ -152,11 +152,12 @@ void MatchingMethod()
 						max.erase(max.begin() + y);
 						y--;
 					}
-		/*	for(x = 0; x < max.size(); x++)
+		/*	for (x = 0; x < max.size(); x++) {
 				cout << max[x].val << " " << max[x].point << endl;
+			}				
 			if (x != 0)
 				cout << "------------------------------ " << max.size() << endl;
-		*/
+			*/
 			newTemplate(grey);
 			FPSPrint(imgBGR);
 			for (MaxVals matchLoc : max)
@@ -171,7 +172,6 @@ void MatchingMethod()
 			imshow(win, imgBGR);
 			frame[0]++;
 		//	mu.unlock();	
-
 			grey.release();
 			imgBGR.release();
 			result.release();
@@ -182,34 +182,28 @@ void MatchingMethod()
 	return;
 }
 
-void changeThresh() 
-{
-	while (!stop) 
-	{
-		if (GetAsyncKeyState(0x57) & 1)		  // ----------- W key pressed
-			thresh += 0.0001f;
-		else if (GetAsyncKeyState(0x53) & 1)  // ----------- S key pressed
-			thresh -= 0.0001f;
-	}
-}
 void MatchStart() 
 {
 	vector<future<void>> tasks;
 	refz = system_clock::now();
 
+	/*templ = imread("temp.png", 0);
+	resize(templ,templ,Size(round(templ.cols / scale), round(templ.rows / scale)));*/
+
 	imgSize[0] = (int)(GetSystemMetrics(SM_CXSCREEN) / scale);
 	imgSize[1] = (int)(GetSystemMetrics(SM_CYSCREEN) / scale);
 
-	while (!(GetAsyncKeyState(VK_ESCAPE) & 1))
-	{
-		if (tasks.empty())
-		{
-			for (int i = 0; i < threads; i++) {
-				tasks.push_back(async(launch::async, MatchingMethod));
-				Sleep(50);				
-			}
-			tasks.push_back(async(launch::async, changeThresh));
-		}
+	for (int i = 0; i < threads; i++) {						
+		tasks.push_back(async(launch::async, MatchingMethod));
+		Sleep(50);
+	}
+
+	while (!(GetAsyncKeyState(VK_ESCAPE) & 1))	
+	{			
+		if (GetAsyncKeyState(0x57) & 1)  // ----------- W key pressed
+			thresh += 0.0001f;		
+		else if (GetAsyncKeyState(0x53) & 1)  // ----------- S key pressed
+			thresh -= 0.0001f;
 		waitKey(1);
 	}
 	stop = true;
@@ -219,9 +213,11 @@ void MatchStart()
 int main()
 {
 	namedWindow(win, WINDOW_AUTOSIZE);
-	setMouseCallback("output", mouse_callback);
+	setMouseCallback(win, mouse_callback);
 	MatchStart();
 	destroyAllWindows();
 	return 0;
 }
 
+//	SetCursorPos((matchLoc.point.x*scale) + 20, (matchLoc.point.y*scale) + 20);
+//  mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
